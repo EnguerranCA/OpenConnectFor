@@ -14,10 +14,13 @@ socket.on('playerColor', (color) => {
 // Update the list of connected players
 socket.on('updatePlayers', (players) => {
     const playersList = document.getElementById('players-list');
-    playersList.innerHTML = '<h2>Connected Players:</h2>';
+    playersList.innerHTML = '<h2>Joueurs Connectés :</h2>';
     for (const [id, color] of Object.entries(players)) {
         const playerItem = document.createElement('div');
-        playerItem.textContent = `Player ${id}: ${color}`;
+        playerItem.classList.add('player-item');
+        playerItem.textContent = `Joueur ${id}`;
+        playerItem.style.backgroundColor = color; // Set the text color to the player's color
+        playerItem.style.color = "white"; // Set the text color to white for better visibility
         playersList.appendChild(playerItem);
     }
 });
@@ -42,8 +45,12 @@ socket.on('playerTurn', (playerId) => {
     const playerInfo = document.getElementById('player-info');
     if (socket.id === playerId) {
         playerInfo.textContent = 'C\'est votre tour !';
+        playerInfo.classList.remove('waiting');
+        playerInfo.classList.add('your-turn');
     } else {
         playerInfo.textContent = `En attente du joueur ${playerId}`;
+        playerInfo.classList.add('waiting');
+        playerInfo.classList.remove('your-turn');
     }
 });
 
@@ -89,6 +96,11 @@ socket.on('displayBoard', ({ rows, cols }) => {
 
     gameBoard.style.display = 'block';
     gameBoard.innerHTML = '';
+
+    // Clear the "C'est votre tour" message when the game starts
+    const playerInfo = document.getElementById('player-info');
+    playerInfo.textContent = '';
+
     for (let row = 0; row < ROWCOUNT; row++) {
         const rowDiv = document.createElement('div');
         rowDiv.style.display = 'flex';
