@@ -35,6 +35,14 @@ startButton.addEventListener('click', () => {
     socket.emit('startGame', { rows, cols });
 });
 
+// Add a 'spinBoard' event listener
+const spinButton = document.getElementById('spin-board');
+
+spinButton.addEventListener('click', () => {
+    // Notify the server to rotate the board
+    socket.emit('spinBoard');
+});
+
 // Initialize the game board state
 let board = Array(ROWCOUNT).fill(null).map(() => Array(COLCOUNT).fill(null));
 let currentPlayer = null;
@@ -114,9 +122,30 @@ socket.on('displayBoard', ({ rows, cols }) => {
     initializeBoard();
 });
 
-socket.on('updateBoard', (newBoard) => {
+socket.on('updateBoard', ({ board: newBoard, rows, cols }) => {
+    if (!newBoard || !rows || !cols) {
+        console.error('Erreur : Données du plateau manquantes ou invalides');
+        return;
+    }
+
     board = newBoard;
-    renderBoard(board);
+    ROWCOUNT = rows;
+    COLCOUNT = cols;
+
+    // Re-render the board with the new dimensions
+    gameBoard.innerHTML = '';
+    for (let row = 0; row < ROWCOUNT; row++) {
+        const rowDiv = document.createElement('div');
+        rowDiv.style.display = 'flex';
+        for (let col = 0; col < COLCOUNT; col++) {
+            const cell = document.createElement('div');
+            cell.classList.add('cell');
+            cell.style.backgroundColor = board[row][col] || 'white';
+            rowDiv.appendChild(cell);
+        }
+        gameBoard.appendChild(rowDiv);
+    }
+    initializeBoard();
 });
 
 socket.on('gameOver', ({ winner, color }) => {

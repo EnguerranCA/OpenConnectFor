@@ -156,7 +156,7 @@ io.on('connection', (socket) => {
         console.log('État du plateau après le coup :', board);
 
         // Broadcast the updated board to all players
-        io.emit('updateBoard', board);
+        io.emit('updateBoard', { board: JSON.parse(JSON.stringify(board)), rows: ROWCOUNT, cols: COLCOUNT });
 
         // Check for a win
         if (checkWin(board, players[socket.id])) {
@@ -167,6 +167,25 @@ io.on('connection', (socket) => {
         // Move to the next player's turn
         currentPlayerIndex = (currentPlayerIndex + 1) % playerOrder.length;
         io.emit('playerTurn', playerOrder[currentPlayerIndex]);
+    });
+
+    // Handle board rotation
+    socket.on('spinBoard', () => {
+        // Rotate the board by 90 degrees on the server side
+        const newBoard = Array(COLCOUNT).fill(null).map(() => Array(ROWCOUNT).fill(null));
+
+        for (let row = 0; row < ROWCOUNT; row++) {
+            for (let col = 0; col < COLCOUNT; col++) {
+                newBoard[col][ROWCOUNT - 1 - row] = board[row][col];
+            }
+        }
+
+        // Update the board dimensions
+        [ROWCOUNT, COLCOUNT] = [COLCOUNT, ROWCOUNT];
+        board = newBoard;
+
+        // Broadcast the updated board and dimensions to all players
+        io.emit('updateBoard', { board: JSON.parse(JSON.stringify(board)), rows: ROWCOUNT, cols: COLCOUNT });
     });
 
     // Handle disconnection
