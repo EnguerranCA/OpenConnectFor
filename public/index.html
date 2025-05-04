@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Puissance 4</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <div id="sidebar">
+        <h2>Joueurs Connectés</h2>
+        <div id="players-list"></div>
+    </div>
+
+    <div id="main-content">
+        <h1>Bienvenue à Puissance 4</h1>
+        <p>Connexion au jeu...</p>
+
+        <div id="player-info"></div>
+
+        <button id="start-game">Commencer</button>
+        <div id="game-board" style="display: none;"></div>
+    </div>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="js/game.js"></script>
+</body>
+</html>
