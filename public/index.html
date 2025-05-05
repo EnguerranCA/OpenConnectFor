@@ -17,8 +17,23 @@
         <div id="player-info"></div>
 
         <button id="start-game">Commencer</button>
-        <button id="spin-board">Tourner le plateau</button>
         <div id="game-board" style="display: none;"></div>
+
+        <!-- <ul class="power-ups">
+            <li class="power-up-item" >
+                <button class="power-up-button" id="power-up-1" data-power-up="spin">
+                    <img src="images/power-up-1.png" alt="Power Up 1" class="power-up-icon">
+                    <span class="power-up-name">Spin</span>
+                </button>
+            </li>
+            <li class="power-up" id="power-up-2">Power Up 2</li>
+            <li class="power-up" id="power-up-3">Power Up 3</li>
+            <li class="power-up" id="power-up-4">Power Up 4</li>
+        </ul> -->
+
+        <ul class="power-ups" id="power-ups-container">
+            <!-- Power-ups will be dynamically added here -->
+        </ul>
     </div>
 
     <script src="/socket.io/socket.io.js"></script>

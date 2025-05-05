@@ -17,6 +17,7 @@ let ROWCOUNT = 6;
 let COLCOUNT = 7;
 let currentPlayerIndex = 0;
 const playerOrder = [];
+const playerScores = {}; // Initialize player scores
 
 function checkWin(board, playerColor) {
     const rows = board.length;
@@ -113,6 +114,12 @@ io.on('connection', (socket) => {
         COLCOUNT = cols;
         board = Array(ROWCOUNT).fill(null).map(() => Array(COLCOUNT).fill(null));
 
+        // Reset player scores
+        for (const playerId of Object.keys(players)) {
+            playerScores[playerId] = 0;
+        }
+        io.emit('updateScores', playerScores);
+
         // Notify all players to display the reset board with new dimensions
         io.emit('displayBoard', { rows: ROWCOUNT, cols: COLCOUNT });
 
@@ -152,6 +159,10 @@ io.on('connection', (socket) => {
             return;
         }
 
+        // Update player score
+        playerScores[socket.id] += 1;
+        io.emit('updateScores', playerScores);
+
         // Debugging log to verify the board state after the move
         console.log('État du plateau après le coup :', board);
 
@@ -186,6 +197,66 @@ io.on('connection', (socket) => {
 
         // Broadcast the updated board and dimensions to all players
         io.emit('updateBoard', { board: JSON.parse(JSON.stringify(board)), rows: ROWCOUNT, cols: COLCOUNT });
+    });
+
+    // Handle power-up usage with point deduction
+    socket.on('powerUpUsed', (powerUpId) => {
+        console.log(`Le joueur ${socket.id} a utilisé le power-up : ${powerUpId}`);
+
+        // spin the board power-up
+        if (powerUpId === 'spin') {
+            if (playerScores[socket.id] >= 1) {
+                playerScores[socket.id] -= 1; // Deduct 1 point
+                console.log(`Le joueur ${socket.id} a dépensé 1 point pour le power-up spin`);
+                // Rotate the board by 90 degrees on the server side
+                const newBoard = Array(COLCOUNT).fill(null).map(() => Array(ROWCOUNT).fill(null));
+
+                for (let row = 0; row < ROWCOUNT; row++) {
+                    for (let col = 0; col < COLCOUNT; col++) {
+                        newBoard[col][ROWCOUNT - 1 - row] = board[row][col];
+                    }
+                }
+
+                // Update the board dimensions
+                [ROWCOUNT, COLCOUNT] = [COLCOUNT, ROWCOUNT];
+                board = newBoard;
+
+                // Broadcast the updated board and dimensions to all players
+                io.emit('updateBoard', { board: JSON.parse(JSON.stringify(board)), rows: ROWCOUNT, cols: COLCOUNT });
+                io.emit('updateScores', playerScores); // Update scores
+            } else {
+                socket.emit('errorMessage', 'Pas assez de points pour utiliser ce power-up !');
+            }
+        }
+
+        // Add row power-up
+        if (powerUpId === 'addrow') {
+            if (playerScores[socket.id] >= 3) {
+                playerScores[socket.id] -= 3; // Deduct 3 points
+                console.log(`Le joueur ${socket.id} a dépensé 3 points pour le power-up addrow`);
+                // Add a new row to the top of the board
+                const newRow = Array(COLCOUNT).fill(null);
+                board.unshift(newRow);
+                ROWCOUNT += 1;
+
+                // Broadcast the updated board and dimensions to all players
+                io.emit('updateBoard', { board: JSON.parse(JSON.stringify(board)), rows: ROWCOUNT, cols: COLCOUNT });
+                io.emit('updateScores', playerScores); // Update scores
+            } else {
+                socket.emit('errorMessage', 'Pas assez de points pour utiliser ce power-up !');
+            }
+        }
+
+        // Freeze column
+
+        // Put a smoke bomb on a 3x3 area
+
+        // Empty a column
+
+        // Skip a turn
+
+        // 
+
     });
 
     // Handle disconnection

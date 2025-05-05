@@ -18,10 +18,46 @@ socket.on('updatePlayers', (players) => {
     for (const [id, color] of Object.entries(players)) {
         const playerItem = document.createElement('div');
         playerItem.classList.add('player-item');
+        playerItem.dataset.playerId = id; // Add data attribute for player ID
         playerItem.textContent = `Joueur ${id}`;
         playerItem.style.backgroundColor = color; // Set the text color to the player's color
         playerItem.style.color = "white"; // Set the text color to white for better visibility
         playersList.appendChild(playerItem);
+    }
+});
+
+// Update player scores and disable unaffordable power-ups
+socket.on('updateScores', (scores) => {
+    const playersList = document.getElementById('players-list');
+    for (const [playerId, score] of Object.entries(scores)) {
+        const playerItem = playersList.querySelector(`[data-player-id="${playerId}"]`);
+        if (playerItem) {
+            const scoreSpan = playerItem.querySelector('.player-score');
+            if (scoreSpan) {
+                scoreSpan.textContent = `Score: ${score}`;
+            } else {
+                const newScoreSpan = document.createElement('span');
+                newScoreSpan.className = 'player-score';
+                newScoreSpan.textContent = `Score: ${score}`;
+                playerItem.appendChild(newScoreSpan);
+            }
+        }
+
+        // Disable unaffordable power-ups for the current player
+        if (socket.id === playerId) {
+            const powerUpButtons = document.querySelectorAll('.power-up-button');
+            powerUpButtons.forEach((button) => {
+                const powerUpId = button.dataset.powerUp;
+                const cost = powerUpId === 'spin' ? 1 : powerUpId === 'addrow' ? 3 : 0;
+                if (score < cost) {
+                    button.disabled = true;
+                    button.classList.add('disabled');
+                } else {
+                    button.disabled = false;
+                    button.classList.remove('disabled');
+                }
+            });
+        }
     }
 });
 
@@ -33,14 +69,6 @@ startButton.addEventListener('click', () => {
     const rows = parseInt(prompt('Entrez le nombre de lignes :', '6'));
     const cols = parseInt(prompt('Entrez le nombre de colonnes :', '7'));
     socket.emit('startGame', { rows, cols });
-});
-
-// Add a 'spinBoard' event listener
-const spinButton = document.getElementById('spin-board');
-
-spinButton.addEventListener('click', () => {
-    // Notify the server to rotate the board
-    socket.emit('spinBoard');
 });
 
 // Initialize the game board state
@@ -150,4 +178,64 @@ socket.on('updateBoard', ({ board: newBoard, rows, cols }) => {
 
 socket.on('gameOver', ({ winner, color }) => {
     alert(`Le joueur ${winner} avec la couleur ${color} a gagné la partie !`);
+});
+
+// Power-up system
+const powerUpManager = {
+    addPowerUp(id, name, icon, action) {
+        const container = document.getElementById('power-ups-container');
+        const item = document.createElement('li');
+        item.className = 'power-up-item';
+
+        const button = document.createElement('button');
+        button.className = 'power-up-button';
+        button.dataset.powerUp = id;
+
+        const img = document.createElement('img');
+        img.src = icon;
+        img.alt = name;
+        img.className = 'power-up-icon';
+
+        const span = document.createElement('span');
+        span.className = 'power-up-name';
+        span.textContent = name;
+
+        button.appendChild(img);
+        button.appendChild(span);
+        button.addEventListener('click', () => {
+            const powerUpId = button.dataset.powerUp;
+            action(powerUpId);
+        });
+
+        item.appendChild(button);
+        container.appendChild(item);
+    }
+};
+
+// Add a generic event listener for all power-ups
+const powerUpsContainer = document.getElementById('power-ups-container');
+if (powerUpsContainer) {
+    powerUpsContainer.replaceWith(powerUpsContainer.cloneNode(true)); // Remove existing listeners
+    powerUpsContainer.addEventListener('click', (event) => {
+        const button = event.target.closest('.power-up-button');
+        if (button) {
+            const powerUpId = button.dataset.powerUp;
+            console.log(`Power-up clicked: ${powerUpId}`);
+            socket.emit('powerUpUsed', powerUpId);
+        }
+    });
+} else {
+    console.error('Power-ups container not found!');
+}
+
+// Example usage
+powerUpManager.addPowerUp('spin', 'Spin Board', 'images/power-up-spin.png', (id) => {
+    console.log(`Power-up clicked: ${id}`);
+    socket.emit('powerUpUsed', id);
+});
+
+// Add the 'addrow' power-up
+powerUpManager.addPowerUp('addrow', 'Add Row', 'images/power-up-addrow.png', (id) => {
+    console.log(`Power-up clicked: ${id}`);
+    socket.emit('powerUpUsed', id);
 });
